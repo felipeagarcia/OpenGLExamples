@@ -2,6 +2,9 @@
 #include <iostream>
 #include <GL/glut.h>
 #include <stdio.h>
+#include <math.h>
+
+#define PI 3.14
 
 GLint WINDOW_WIDTH  = 500,
       WINDOW_HEIGHT = 500;
@@ -27,7 +30,13 @@ typedef struct Point{
 
 Point initialPoint;
 
+typedef struct  User{
+  int draw_type;
+}User;
 
+
+User user;
+bool menuOn = false;
 int main(int argc, char* argv[])
 {
   glutInit(&argc, argv);
@@ -39,7 +48,7 @@ int main(int argc, char* argv[])
   glutInitWindowPosition((screen_width - WINDOW_WIDTH) / 2, (screen_height - WINDOW_WIDTH) / 2);
   glutInitWindowSize(WINDOW_WIDTH, WINDOW_WIDTH);
   glutCreateWindow("OpenGL manipulacao de entradas (teclado/mouse)");
-  
+  user.draw_type = 0;
   init();
   glutDisplayFunc(draw_test);
   
@@ -56,7 +65,10 @@ int main(int argc, char* argv[])
   //GL_MODELVIEW (padrao), GL_PROJECTION, GL_TEXTURE, ←-
 
   //void glMatrixMode(GLenum mode);
-
+  glutRemoveMenuItem(0);
+  glutRemoveMenuItem(6);
+  glutRemoveMenuItem(7);
+  glutRemoveMenuItem(8);
   glutMainLoop();
   
   
@@ -74,18 +86,50 @@ void init()
 }
 
 
-void draw_line(GLint x, GLint y){
-  glClear(GL_COLOR_BUFFER_BIT);
+void draw_line(GLint x1, GLint y1, GLint x2, GLint y2){
+  /*This function draws a line between two points
+  * @params: x1 = initial x
+  *          y1 = initial y
+  *          x2 = final x
+  *          y2 = final y
+  */
+  //glClear(GL_COLOR_BUFFER_BIT);
   glColor3f(0, 0, 0);
   glPointSize(2.0f);
-  GLint dx = x - initialPoint.x , dy = y - initialPoint.y, inc;
-  GLfloat i = (GLfloat)initialPoint.x, j = (GLfloat)initialPoint.y,  m = (GLfloat)dy/dx;
+  GLint dx = x2 - x1 , dy = y2 - y1, inc;
+  GLfloat i = (GLfloat)x1, j = (GLfloat)y1,  m;
+  if(dy == 0){
+    m = 0;
+    inc = dx < 0? -1 : 1;
+    glBegin(GL_POINTS);
+    while(i != x2){
+      glVertex2f(i, j);
+      i = i + inc;
+    }
+    glEnd();
+    glFlush();
+    return;
+  } else if(dx == 0){
+    m = 0;
+    inc = dy < 0? -1 : 1;
+    glBegin(GL_POINTS);
+    while(j != y2){
+      glVertex2f(i, j);
+      j = j + inc;
+    }
+    glEnd();
+    glFlush();
+    return;
+  }
+  else{
+    m = (GLfloat)dy/dx;
+  }
   glBegin(GL_POINTS);
     if(abs(dx) > abs(dy)){ // variacao de x eh maior
       inc = dx < 0? -1 : 1;
       m = inc * m;
       printf("inc = %d e dx eh maior\n",inc );
-      while(i != x && j != y){
+      while(i != x2 && j != y2){
         glVertex2f(i, j);
         i = i + (GLfloat)inc;
         j = j + m;
@@ -95,34 +139,75 @@ void draw_line(GLint x, GLint y){
       m = (GLfloat)dx/dy;
       m = inc * m;
       printf("inc = %d e dy eh maior\n",inc );
-      while(i != x && j != y){
+      while(i != x2 && j != y2){
         glVertex2f(i, j);
         i = i + m;
         j = j + (GLfloat)inc;
       }
     }
   glEnd();
-  glutSwapBuffers();
+  glFlush();
 }
 
+
+void draw_square(GLint x1, GLint y1, GLint x2, GLint y2){
+  draw_line(x1, y1, x2, y1);
+  draw_line(x1, y1, x1, y2);
+  draw_line(x1, y2, x2, y2);
+  draw_line(x2, y1, x2, y2);
+}
+
+void draw_triangle(GLint x1, GLint y1, GLint x2, GLint y2){
+  draw_line(x1, y1, x2, y2);
+  GLint dx = x2 - x1;
+  printf("dx = %d\n", dx);
+  draw_line(x1, y1, x1 - dx, y2);
+  draw_line(x1 - dx, y2, x2, y2);
+
+}
+
+void draw_circle(GLint x1, GLint y1, GLint x2, GLint y2){
+  int r = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2)), i;
+  int qtd_retas = 100;
+  int xi, yi, xf, yf;
+  for(i = 1; i <= qtd_retas; i++){
+    xi = x1 + r*cos((2 * PI * (i-1))/qtd_retas);
+    yi = y1 + r*sin((2 * PI * (i-1))/qtd_retas);
+    xf = x1 + r*cos((2 * PI * (i))/qtd_retas);
+    yf = y1 + r*sin((2 * PI * (i))/qtd_retas);
+    draw_line(xi, yi, xf, yf);
+  }
+}
+
+void draw_ellipse(GLint x1, GLint y1, GLint x2, GLint y2){
+  //int h = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+  float rx = abs(x2 - x1);
+  float ry = abs(y2 - y1);  
+  int qtd_retas = 100, i;
+  int xi, yi, xf, yf;
+  for(i = 1; i <= qtd_retas; i++){
+    xi = x1 + rx*cos((2 * PI * (i-1))/qtd_retas);
+    yi = y1 + ry*sin((2 * PI * (i-1))/qtd_retas);
+    xf = x1 + rx*cos((2 * PI * (i))/qtd_retas);
+    yf = y1 + ry*sin((2 * PI * (i))/qtd_retas);
+    draw_line(xi, yi, xf, yf);
+  }
+}
 
 void draw_test()
 {
 
-  
   std::cout<<"Desenho\n";
   
 }
 
 void mouse_test(GLint button, GLint action, GLint x, GLint y)
 { 
-
   switch(button)
   {
     case GLUT_LEFT_BUTTON: 
     {
       std::cout<<"Esquerda";
-      draw_line(x,y);
       break;
     }
     case GLUT_MIDDLE_BUTTON:
@@ -138,18 +223,36 @@ void mouse_test(GLint button, GLint action, GLint x, GLint y)
     default: break;
   }
   
-  if(action == GLUT_DOWN){
+  if(action == GLUT_DOWN && button == GLUT_LEFT_BUTTON){
     std::cout<<" preciona";
     initialPoint.x = x;
     initialPoint.y = y;
   }
-
-  else //GLUT_UP
-    draw_line(x, y);
-  
+  else if(button == GLUT_LEFT_BUTTON && !menuOn){ //GLUT_UP
+    switch(user.draw_type){
+      case 1: // linha
+        draw_line(initialPoint.x, initialPoint.y,x,y);
+        break;
+      case 2: // quadrado
+        draw_square(initialPoint.x, initialPoint.y, x, y);
+        break;
+      case 3: // triangulo
+        draw_triangle (initialPoint.x, initialPoint.y,x,y);
+        break;
+      case 4: //circulo
+        draw_circle(initialPoint.x, initialPoint.y,x,y);
+        break;
+      case 5: //elipse
+        draw_ellipse(initialPoint.x, initialPoint.y,x,y);
+        break;
+      default:
+        break;
+    }
+    
+  }
 // x cresce da esquerda pra direita. O y cresce de cima para baixo  
   std::cout<<" em (x:"<<x<<", y:"<<y<<")";
-    
+    menuOn = false;
   std::cout<<"\n"; 
 }
 
@@ -160,7 +263,7 @@ void mouse_test2(GLint x, GLint y)
 
 void mouse_test3(GLint x, GLint y)
 {
-  draw_line(x,y);
+  //draw_line(x,y);
   std::cout<<"Arrastando o mouse para posicao (x:"<<x<<", y:"<<y<<")\n"; 
 }
 
@@ -181,6 +284,7 @@ void keybord_test(GLubyte key, GLint x, GLint y)
 
   std::cout<<"Tecla: "<<(GLint) key<<" (x:"<<x<<", y:"<<y<<")\n"; 
   
+
   //ESC = 27
   if (key == 27)
     glutReshapeWindow(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -200,20 +304,25 @@ void keybord_test2(GLint key, GLint x, GLint y)
 
 void menu_test(GLint item_number)
 {
+  menuOn = true;
   std::cout<<"Item "<<item_number<<"\n";
+  user.draw_type = item_number;
   glutPostRedisplay();
 }
 
 void test_create_menu()
 {
   GLint submenu_id = glutCreateMenu(menu_test);
-  glutAddMenuEntry("Subitem 1", 4);
-  glutAddMenuEntry("Subitem 2", 5);
-  glutAddMenuEntry("Subitem 3", 6);  
+  glutAddMenuEntry("Subitem 1", 6);
+  glutAddMenuEntry("Subitem 2", 7);
+  glutAddMenuEntry("Subitem 3", 8);  
   
   GLint menu_id = glutCreateMenu(menu_test);  
-  glutAddMenuEntry("Item 1", 1);
-  glutAddMenuEntry("Item 2", 2);
+  glutAddMenuEntry("Reta", 1);
+  glutAddMenuEntry("Quadrado", 2);
+  glutAddMenuEntry("Triangulo", 3);
+  glutAddMenuEntry("Circulo", 4);
+  glutAddMenuEntry("Elipse", 5);
   glutAddSubMenu("Item 3", submenu_id);  
   
   glutAttachMenu(GLUT_RIGHT_BUTTON);
