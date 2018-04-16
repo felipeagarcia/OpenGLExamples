@@ -115,28 +115,8 @@ void draw_line(GLint x1, GLint y1, GLint x2, GLint y2){
   glPointSize(2.0f);
   GLint dx = x2 - x1 , dy = y2 - y1, inc;
   GLfloat i = (GLfloat)x1, j = (GLfloat)y1,  m;
-  if(dy == 0){
+  if(dy == 0 || dx == 0){
     m = 0;
-    inc = dx < 0? -1 : 1;
-    glBegin(GL_POINTS);
-    while(i != x2){
-      glVertex2f(i, j);
-      i = i + inc;
-    }
-    glEnd();
-    glFlush();
-    return;
-  } else if(dx == 0){
-    m = 0;
-    inc = dy < 0? -1 : 1;
-    glBegin(GL_POINTS);
-    while(j != y2){
-      glVertex2f(i, j);
-      j = j + inc;
-    }
-    glEnd();
-    glFlush();
-    return;
   }
   else{
     m = (GLfloat)dy/dx;
@@ -146,7 +126,7 @@ void draw_line(GLint x1, GLint y1, GLint x2, GLint y2){
       inc = dx < 0? -1 : 1;
       m = inc * m;
       printf("inc = %d e dx eh maior\n",inc );
-      while(i != x2 && j != y2){
+      while(i != x2){
         glVertex2f(i, j);
         i = i + (GLfloat)inc;
         j = j + m;
@@ -156,7 +136,7 @@ void draw_line(GLint x1, GLint y1, GLint x2, GLint y2){
       m = (GLfloat)dx/dy;
       m = inc * m;
       printf("inc = %d e dy eh maior\n",inc );
-      while(i != x2 && j != y2){
+      while(j != y2){
         glVertex2f(i, j);
         i = i + m;
         j = j + (GLfloat)inc;
@@ -198,7 +178,7 @@ void draw_ellipse(GLint x1, GLint y1, GLint x2, GLint y2){
   //int h = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
   float rx = abs(x2 - x1);
   float ry = abs(y2 - y1);  
-  int qtd_retas = 100, i;
+  int qtd_retas = 50, i;
   int xi, yi, xf, yf;
   for(i = 1; i <= qtd_retas; i++){
     xi = x1 + rx*cos((2 * PI * (i-1))/qtd_retas);
@@ -253,7 +233,7 @@ void redrawAll(ListOfObjects list_objects){
 
 void removeObject(){
 	if(objects.count >= 0){
-		objects.object[objects.count].draw_type = -1;
+		objects.object[objects.count - 1].draw_type = -1;
 		objects.count --;
 		glClear(GL_COLOR_BUFFER_BIT);
 		redrawAll(objects);
@@ -274,11 +254,17 @@ void rotate(Object obj, float angle){
 }
 
 void translate(Object obj, Point pf){
-	
+
 }
 
-void scale(Object obj, int mult){
-	
+void scale(Object obj, float mult){
+	//obj.p1.x = obj.p1.x * mult;
+  //obj.p1.y = obj.p1.y * mult;
+  obj.p2.x = obj.p2.x * mult; 
+  obj.p2.y = obj.p2.y * mult;
+  removeObject();
+  addObject(obj.p1, obj.p2, obj.draw_type);
+  redrawAll(objects);  
 }
 
 void mouse_test(GLint button, GLint action, GLint x, GLint y)
@@ -368,8 +354,8 @@ void keybord_test(GLubyte key, GLint x, GLint y)
   else if(m == GLUT_ACTIVE_ALT)
     std::cout<<"Alt "; 
   
-  if((GLint)key == 122)
-  	removeObject();
+  if((GLint)key == 43)
+  	scale(objects.object[objects.count - 1], 1.1f);
 //VERIFICAR TABELA ASCII QUANDO O CTRL ESTIVER PRECIONADO COM ALGUMA LETRA  
   if(m == GLUT_ACTIVE_CTRL && (GLint) key == 4)
     exit(EXIT_SUCCESS);
