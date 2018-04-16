@@ -35,8 +35,22 @@ typedef struct  User{
 }User;
 
 
+typedef struct Object{
+	Point p1;
+	Point p2;
+	int draw_type;
+}Object;
+
+typedef struct ListOfObjects{
+	Object object[100];
+	int count;
+}ListOfObjects;
+
 User user;
 bool menuOn = false;
+ListOfObjects objects;
+
+
 int main(int argc, char* argv[])
 {
   glutInit(&argc, argv);
@@ -48,10 +62,13 @@ int main(int argc, char* argv[])
   glutInitWindowPosition((screen_width - WINDOW_WIDTH) / 2, (screen_height - WINDOW_WIDTH) / 2);
   glutInitWindowSize(WINDOW_WIDTH, WINDOW_WIDTH);
   glutCreateWindow("OpenGL manipulacao de entradas (teclado/mouse)");
-  user.draw_type = 0;
+  user.draw_type = 1;
+  for(int i = 0; i < 100; i++){
+  	objects.object[i].draw_type = -1;
+  }
   init();
   glutDisplayFunc(draw_test);
-  
+  objects.count = 0;  
   glutMouseFunc(mouse_test);
   glutPassiveMotionFunc(mouse_test2);
   glutMotionFunc(mouse_test3);
@@ -146,7 +163,6 @@ void draw_line(GLint x1, GLint y1, GLint x2, GLint y2){
       }
     }
   glEnd();
-  glFlush();
 }
 
 
@@ -160,7 +176,6 @@ void draw_square(GLint x1, GLint y1, GLint x2, GLint y2){
 void draw_triangle(GLint x1, GLint y1, GLint x2, GLint y2){
   draw_line(x1, y1, x2, y2);
   GLint dx = x2 - x1;
-  printf("dx = %d\n", dx);
   draw_line(x1, y1, x1 - dx, y2);
   draw_line(x1 - dx, y2, x2, y2);
 
@@ -194,11 +209,76 @@ void draw_ellipse(GLint x1, GLint y1, GLint x2, GLint y2){
   }
 }
 
+void addObject(Point p1, Point p2, int type){
+	objects.object[objects.count].p1 = p1;
+	objects.object[objects.count].p2 = p2;
+	objects.object[objects.count].draw_type = type;
+	objects.count++;
+}
+
+void draw_object(Object obj){
+	Point p1 = obj.p1;
+	Point p2 = obj.p2;
+	int type = obj.draw_type;
+	printf("Meu tipo eh %d\n", type);
+	switch(type){
+      case 1: // linha
+        draw_line(p1.x, p1.y, p2.x, p2.y);
+        break;
+      case 2: // quadrado
+        draw_square(p1.x, p1.y, p2.x, p2.y);
+        break;
+      case 3: // triangulo
+        draw_triangle (p1.x, p1.y, p2.x, p2.y);
+        break;
+      case 4: //circulo
+        draw_circle(p1.x, p1.y, p2.x, p2.y);
+        break;
+      case 5: //elipse
+        draw_ellipse(p1.x, p1.y, p2.x, p2.y);
+        break;
+      default:
+        break;
+    }
+}
+
+void redrawAll(ListOfObjects list_objects){
+	int i = 0;
+	while(list_objects.object[i].draw_type != -1){
+		draw_object(list_objects.object[i]);
+		i++;
+	}
+	glFlush();
+}
+
+void removeObject(){
+	if(objects.count >= 0){
+		objects.object[objects.count].draw_type = -1;
+		objects.count --;
+		glClear(GL_COLOR_BUFFER_BIT);
+		redrawAll(objects);
+	}
+}
+
+
+
 void draw_test()
 {
 
   std::cout<<"Desenho\n";
   
+}
+
+void rotate(Object obj, float angle){
+
+}
+
+void translate(Object obj, Point pf){
+	
+}
+
+void scale(Object obj, int mult){
+	
 }
 
 void mouse_test(GLint button, GLint action, GLint x, GLint y)
@@ -229,26 +309,36 @@ void mouse_test(GLint button, GLint action, GLint x, GLint y)
     initialPoint.y = y;
   }
   else if(button == GLUT_LEFT_BUTTON && !menuOn){ //GLUT_UP
+  	Point p1, p2;
+  	p1.x = initialPoint.x;
+  	p1.y = initialPoint.y;
+  	p2.x = x;
+  	p2.y = y;
     switch(user.draw_type){
       case 1: // linha
         draw_line(initialPoint.x, initialPoint.y,x,y);
+        addObject(p1,p2,user.draw_type);
         break;
       case 2: // quadrado
         draw_square(initialPoint.x, initialPoint.y, x, y);
+        addObject(p1,p2,user.draw_type);
         break;
       case 3: // triangulo
         draw_triangle (initialPoint.x, initialPoint.y,x,y);
+        addObject(p1,p2,user.draw_type);
         break;
       case 4: //circulo
         draw_circle(initialPoint.x, initialPoint.y,x,y);
+        addObject(p1,p2,user.draw_type);
         break;
       case 5: //elipse
         draw_ellipse(initialPoint.x, initialPoint.y,x,y);
+        addObject(p1,p2,user.draw_type);
         break;
       default:
         break;
     }
-    
+    glFlush();
   }
 // x cresce da esquerda pra direita. O y cresce de cima para baixo  
   std::cout<<" em (x:"<<x<<", y:"<<y<<")";
@@ -273,11 +363,13 @@ void keybord_test(GLubyte key, GLint x, GLint y)
   
   if(m == GLUT_ACTIVE_SHIFT)
     std::cout<<"Shift ou Caps ";
-  else if(m == GLUT_ACTIVE_CTRL)
-    std::cout<<"Control ";
+  else if(m == GLUT_ACTIVE_CTRL && (GLint)key == 26)
+    removeObject();
   else if(m == GLUT_ACTIVE_ALT)
     std::cout<<"Alt "; 
   
+  if((GLint)key == 122)
+  	removeObject();
 //VERIFICAR TABELA ASCII QUANDO O CTRL ESTIVER PRECIONADO COM ALGUMA LETRA  
   if(m == GLUT_ACTIVE_CTRL && (GLint) key == 4)
     exit(EXIT_SUCCESS);
@@ -327,5 +419,6 @@ void test_create_menu()
   
   glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
+
 
 
