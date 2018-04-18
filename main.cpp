@@ -249,22 +249,57 @@ void draw_test()
   
 }
 
-void rotate(Object obj, float angle){
 
-}
 
-void translate(Object obj, Point pf){
-
-}
-
-void scale(Object obj, float mult){
-	//obj.p1.x = obj.p1.x * mult;
-  //obj.p1.y = obj.p1.y * mult;
-  obj.p2.x = obj.p2.x * mult; 
-  obj.p2.y = obj.p2.y * mult;
+Object translate(Object obj, Point pf){
+  GLint dx = pf.x - obj.p1.x;
+  GLint dy = pf.y - obj.p1.y;
+  obj.p1.x += dx;
+  obj.p1.y += dy;
+  obj.p2.x += dx;
+  obj.p2.y += dy;
   removeObject();
   addObject(obj.p1, obj.p2, obj.draw_type);
-  redrawAll(objects);  
+  redrawAll(objects); 
+  return obj;
+}
+
+Object rotate(Object obj, float angle){
+  Point origin, p2, p1;
+  origin.x = 0;
+  origin.y = 0;
+  p1 = obj.p1;
+  obj = translate(obj, origin);
+  p2 = obj.p2;
+  obj.p2.x = round((p2.x) * cos(angle)) - round((p2.y) * sin(angle));
+  obj.p2.y = round((p2.x) * sin(angle)) + round((p2.y) * cos(angle));
+  obj = translate(obj, p1);
+  removeObject();
+  addObject(obj.p1, obj.p2, obj.draw_type);
+  redrawAll(objects);
+  printf("rotating\n");
+  return obj; 
+}
+
+Object scale(Object obj, float mult){
+  GLint dx = obj.p2.x - obj.p1.x;
+  GLint dy = obj.p2.y - obj.p1.y;
+  if((abs(dx) <= 20 || abs(dy) <= 20) && mult < 1)
+    return obj;
+  Point p1, p2;
+  p1 = obj.p1;
+  p2 = obj.p2;
+  Point origin;
+  origin.x = 0;
+  origin.y = 0;
+  obj = translate(obj, origin);
+  obj.p2.x = obj.p2.x * mult; 
+  obj.p2.y = obj.p2.y * mult;
+  obj = translate(obj, p2);
+  removeObject();
+  addObject(obj.p1, obj.p2, obj.draw_type);
+  redrawAll(objects);
+  return obj;  
 }
 
 void mouse_test(GLint button, GLint action, GLint x, GLint y)
@@ -346,7 +381,9 @@ void mouse_test3(GLint x, GLint y)
 void keybord_test(GLubyte key, GLint x, GLint y)
 {
   GLint m = glutGetModifiers();
-  
+  Point p;
+  p.x = x;
+  p.y = y;
   if(m == GLUT_ACTIVE_SHIFT)
     std::cout<<"Shift ou Caps ";
   else if(m == GLUT_ACTIVE_CTRL && (GLint)key == 26)
@@ -355,7 +392,13 @@ void keybord_test(GLubyte key, GLint x, GLint y)
     std::cout<<"Alt "; 
   
   if((GLint)key == 43)
-  	scale(objects.object[objects.count - 1], 1.1f);
+  	objects.object[objects.count - 1] = scale(objects.object[objects.count - 1], 1.1f);
+  else if((GLint)key == 45)
+    objects.object[objects.count - 1] = scale(objects.object[objects.count - 1], 1.0f/1.1f);
+
+
+  else if((GLint)key == 116)
+    objects.object[objects.count - 1] = translate(objects.object[objects.count - 1], p);
 //VERIFICAR TABELA ASCII QUANDO O CTRL ESTIVER PRECIONADO COM ALGUMA LETRA  
   if(m == GLUT_ACTIVE_CTRL && (GLint) key == 4)
     exit(EXIT_SUCCESS);
@@ -376,6 +419,11 @@ void keybord_test2(GLint key, GLint x, GLint y)
   
   std::cout<<"Tecla especial: "<<key<<" (x:"<<x<<", y:"<<y<<")\n"; 
   
+  if((GLint)key == 102)
+    objects.object[objects.count - 1] = rotate(objects.object[objects.count - 1], 0.2f);
+  else if((GLint)key == 100)
+    objects.object[objects.count - 1] = rotate(objects.object[objects.count - 1], -0.2f);
+
   if(key == GLUT_KEY_F11)
     glutFullScreen();
 }
